@@ -7,7 +7,7 @@ import pymongo
 import pandas as pd
 
 client = pymongo.MongoClient('localhost',27017)
-db  = client['yyq']
+db  = client['yyj']
 pk10 = db['sina_test']
 data = pd.DataFrame(list(pk10.find()))
 del data['_id']

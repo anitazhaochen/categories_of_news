@@ -63,7 +63,7 @@ def process_url_and_title(urls, titles):
     for title in titles:
         try:
             title = str(titles[0][9:-1]).encode().decode('unicode-escape').encode('utf-8').decode('utf-8') # 反斜杠转义，无法直接转成 utf-8 的汉字
-        except:
+        except Exception:
             print("转义出现错误.. error")
             print(title)
         newtitles.append(title)
@@ -92,24 +92,22 @@ def get_page(title_and_url):
             print("".join(content))
         di["content"] = "".join(content)
     return title_and_url
-i = 1
+
 
 def savetomongo(title_and_url_and_content):
-    global i
     client = pymongo.MongoClient(host='localhost', port=27017)
-    db = client.yyq
+    db = client.yyj
     sina_col = db.sina
     for data in title_and_url_and_content:
         sina_col.insert_one(data)
-        i = i + 1
-        print("第" + str(i) + "   条插入成功")
+    print("插入数据库成功")
 
-pool = redis.ConnectionPool(host='localhost', port=6379,decode_responses=True)  # host是redis主机，需要redis服务端和客户端都起着 redis默认端口是6379
-r = redis.Redis(connection_pool=pool)
 def update_page(page):
     global r
     r.set('pageCount', page)  # key是"gender" value是"male" 将键值对存入redis缓存
 
+pool = redis.ConnectionPool(host='localhost', port=6379,decode_responses=True)  # host是redis主机，需要redis服务端和客户端都起着 redis默认端口是6379
+r = redis.Redis(connection_pool=pool)
 def get_current_page_count():
     global r
     page = r.get('pageCount')
