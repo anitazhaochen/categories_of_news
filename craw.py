@@ -7,6 +7,9 @@ import time
 import pymongo
 import redis
 
+sports_main_url = "http://sports.sina.com.cn/roll/index.shtml#pageid=13&lid=2503&k=&num=50&page=1"
+
+sports_timestamp = 1557908143037
 
 
 MAIN_URL = "https://news.sina.com.cn/roll/#pageid=153&lid=2509&k=&num=50&page=1";
@@ -17,10 +20,19 @@ headers = {'Accept': '*/*',
                'Referer': 'http://www.baidu.com/'
                }
 
-def get_url_and_title(page=1, timestamp=1556788864475):
-    post_url = "https://feed.mix.sina.com.cn/api/roll/get?pageid=153&lid=2509&k=&num=50&page="\
-           +str(page)+"&r=0.21028240536879106&callback=jQuery1112019530749514224044_1556788864472&_="\
-           +str(timestamp)
+def get_url_and_title(sportsPage=1, timestamp=1556788864475):
+
+    sports_post_url = "http://feed.mix.sina.com.cn/api/roll/get?pageid=13&lid=2503&k=&num=50&page=" \
+                      +str(sportsPage)+"&r=0.023268787017239667&callback=jQuery31101484415910158985_1557908143034&_=" \
+                       +str(sports_timestamp)
+
+
+   # post_url = "https://feed.mix.sina.com.cn/api/roll/get?pageid=153&lid=2509&k=&num=50&page="\
+   #        +str(page)+"&r=0.21028240536879106&callback=jQuery1112019530749514224044_1556788864472&_="\
+   #        +str(timestamp)
+
+    ## 修改url 抓取 体育新闻
+    post_url = sports_post_url
     s = requests.session()
     s.headers['Accept'] = 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'
     s.headers['Accept-Encoding'] = 'gzip, deflate, br'
@@ -62,7 +74,8 @@ def process_url_and_title(urls, titles):
     newtitles = []
     for title in titles:
         try:
-            title = str(titles[0][9:-1]).encode().decode('unicode-escape').encode('utf-8').decode('utf-8') # 反斜杠转义，无法直接转成 utf-8 的汉字
+            title = str(title[9:-1]).encode().decode('unicode-escape').encode('utf-8').decode('utf-8') # 反斜杠转义，无法直接转成 utf-8 的汉字
+            print(title)
         except Exception:
             print("转义出现错误.. error")
             print(title)
@@ -74,18 +87,25 @@ def process_url_and_title(urls, titles):
         di["title"] = newtitles[i]
         di["url"] = newurl[i]
         title_and_url.append(di)
+        #print(title_and_url)
     return title_and_url
 
 def get_page(title_and_url):
 
+    #response = requests.get(url=post_url,headers=headers)
     for di in title_and_url:
         time.sleep(2)
-        html = requests.get(di["url"], headers=headers).content
+        #print(di)
+
+        response = requests.get(di["url"], headers=headers)
+        response.encoding = 'utf-8'
+        html = response.content.decode("utf-8")
         tree = etree.HTML(html)
         content = tree.xpath('//*[@id="article"]/p/text()')
         if len(content) == 0:
-            print("尝试使用另一种xpath")
             content = tree.xpath('//*[@id="artibody"]/p/text()')
+            print("正文")
+            print("".join(content))
             if len(content) == 0:
                 print("error    "+di["url"])
         else:
@@ -102,22 +122,23 @@ def savetomongo(title_and_url_and_content):
         sina_col.insert_one(data)
     print("插入数据库成功")
 
-def update_page(page):
+def update_page(key="pageCount",page=1):
     global r
-    r.set('pageCount', page)  # key是"gender" value是"male" 将键值对存入redis缓存
+    r.set(key, page)  # key是"gender" value是"male" 将键值对存入redis缓存
 
 pool = redis.ConnectionPool(host='localhost', port=6379,decode_responses=True)  # host是redis主机，需要redis服务端和客户端都起着 redis默认端口是6379
 r = redis.Redis(connection_pool=pool)
-def get_current_page_count():
+
+def get_current_page_count(key="pageCount"):
     global r
-    page = r.get('pageCount')
+    page = r.get(key)
     return int(page)
 
 
 
 def main():
     timestamp = 1556788864476
-    page = get_current_page_count()
+    page = get_current_page_count("sportsPage")
     while page<=16225:
             urls, titles = get_url_and_title(page, timestamp)
             title_and_urls = process_url_and_title(urls, titles)
@@ -127,13 +148,17 @@ def main():
             print("抓取到第"+str(page)+"页！！！！！！！！！！！")
             page += 1
             timestamp += page
-            update_page(page)
+            update_page("sportsPage",page)
 
 
 if __name__ == "__main__":
-    for i in range(10):
+    i = 0
+    while True:
         try:
             main()
         except Exception:
+            page = get_current_page_count("sportsPage")
+            update_page("sportsPage",page)
+            i += 1
             print("请求超时第"+str(i)+   "次")
             time.sleep(60)
