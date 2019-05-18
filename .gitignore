@@ -2,3 +2,4 @@
 .idea/
 venv/
 model.joblib
+__pycache__/

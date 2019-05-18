@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import pandas as pd
 import jieba
+import jieba.analyse
 
 class util(object):
 
@@ -47,11 +48,15 @@ class util(object):
     def getdata(self):
         client = pymongo.MongoClient('localhost', 27017)
         db = client['yyj']
-        pk10 = db['sina_add_url']
-        df_news = pd.DataFrame(list(pk10.find()))
+        sina_data = db['sina_add_url']
+        df_news = pd.DataFrame(list(sina_data.find()))
         del df_news['_id']
-        df_news.dropna()
+        print("修改前数据总长度为：")
+        print(len(df_news))
+        # 删除无用的行！！ 注意 默认返回的是修改后的, inplace 表示在原来的上面修改
+        df_news.dropna(axis=0,how="any",inplace=True)
         df_news = df_news[['title', 'url', 'content', 'category']]
+        print("数据总长度为：")
         print(len(df_news))
         content = df_news.content.values.tolist()
         content_S = []
@@ -63,6 +68,40 @@ class util(object):
                 content_S.append(current_segment)
         return content_S, category_S
 
+    def clean_stopwords(self, contents, stopwords):
+        contents_clean = []
+        all_words = []
+        for line in contents:
+            line_clean = []
+            for word in line:
+                if word in stopwords or word == ' ':
+                    # print(word)
+                    continue
+                line_clean.append(word)
+                all_words.append(str(word))
+            contents_clean.append(line_clean)
+        return contents_clean, all_words
+
+    # 基于 TF-IDF 提取关键词
+    def get_main_key(self,content_S):
+        index = 0
+        # print(df_news['content'][index])
+        content_S_str = ''.join(content_S[index])
+        print(" ".join(jieba.analyse.extract_tags(content_S_str, topK=5,
+                                                  withWeight=False)))
+
+    def process_mongo_data(self):
+        client = pymongo.MongoClient('localhost', 27017)
+        db = client['yyj']
+        sina_data = db['sina_add_url']
+        result = sina_data.find()
+        for r in result:
+            if r['content']!='' and r['category'] != '':
+                pass
+            else:
+                print("删除")
+                sina_data.delete_one(r)
+
 if __name__ == "__main__":
     u = util()
-    u.category()
+    u.process_mongo_data()

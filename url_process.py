@@ -7,7 +7,11 @@ import redis
 client = pymongo.MongoClient(host='localhost', port=27017)
 db = client.yyj
 #sina_test = db.sina_test
-sina_test = db.sina
+sina_test = db.sina_add_url
+
+sina_add_url = db.sina_add_url
+
+
 result = sina_test.find()
 s = set()
 tech = 0
@@ -56,5 +60,8 @@ def category():
         print(cate)
         db.sina_add_url.insert_one(record)
 
+#sina_add_url.delete_many({"category":'v'})
+#sina_add_url.delete_many({"category":'video'})
 
-
+#for i in range(1000):
+#    sina_add_url.delete_one({'category':'news'})
