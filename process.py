@@ -48,7 +48,7 @@ class util(object):
     def getdata(self):
         client = pymongo.MongoClient('localhost', 27017)
         db = client['yyj']
-        sina_data = db['sina_add_url']
+        sina_data = db['sina_add_url_test']
         df_news = pd.DataFrame(list(sina_data.find()))
         del df_news['_id']
         print("修改前数据总长度为：")
@@ -62,19 +62,21 @@ class util(object):
         content_S = []
         category_S = []
         for line in range(len(content)):
-            current_segment = jieba.lcut(content[line])
+            text = content[line].strip()
+            current_segment = jieba.lcut(text)
             if len(current_segment) > 1 and current_segment != '\r\n':
                 category_S.append(df_news['category'][line])
                 content_S.append(current_segment)
         return content_S, category_S
 
-    def clean_stopwords(self, contents, stopwords):
+    def clean_stopwords(self, contents, path):
+        stopwords = [line.strip() for line in open(path, 'r', encoding='utf-8').readlines()]
         contents_clean = []
         all_words = []
         for line in contents:
             line_clean = []
             for word in line:
-                if word in stopwords or word == ' ':
+                if word in stopwords:
                     # print(word)
                     continue
                 line_clean.append(word)

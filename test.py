@@ -15,9 +15,7 @@ df_content = pd.DataFrame({"content_S": content_S})
 print(df_content.head())
 
 # 清除停用词
-stopwords = pd.read_csv('./baidu_stopwords.txt', sep="\n", header=None,
-                        names=["stopword"])
-contents_clean, all_words = u.clean_stopwords(df_content.content_S.values.tolist(), stopwords.stopword.values.tolist())
+contents_clean, all_words = u.clean_stopwords(df_content.content_S.values.tolist(), 'baidu_stopwords.txt')
 #print(contents_clean[0])
 #print(len(contents_clean))
 df_content = pd.DataFrame({'contents_clean':contents_clean})
@@ -29,8 +27,9 @@ words_count = words_count.reset_index().sort_values(by=["count"],
                                                     ascending=False)
 
 print(words_count.head())
+
 # 输出词云
-#u.wordcloud(words_count)
+u.wordcloud(words_count)
 
 ## 基于 TF-IDF 提取关键词
 u.get_main_key(content_S)
@@ -98,5 +97,17 @@ for line_index in range(len(x_test)):
         print(line_index)
 print(classifier.score(vec.transform(test_words), y_test))
 u.savemodel(classifier)
-#models = u.load_model("model.joblib")
-#print(models.predict(vec.transform(words)))
+
+# 预测结果
+models = u.load_model("model.joblib")
+result = models.predict(vec.transform(words))
+for x in result:
+    if x == 1:
+        print("生活")
+    if x == 2:
+        print("金融")
+    if x == 3:
+        print("科技")
+    if x == 4:
+        print("体育")
+
