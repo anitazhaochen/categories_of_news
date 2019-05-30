@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import pymongo
-import redis
 
 client = pymongo.MongoClient(host='localhost', port=27017)
 db = client.yyj

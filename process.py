@@ -8,6 +8,7 @@ import matplotlib
 import pandas as pd
 import jieba
 import jieba.analyse
+import re
 
 class util(object):
 
@@ -45,24 +46,23 @@ class util(object):
         # 输出词云图片
         plt.show()
 
-    def getdata(self):
+    def getdata(self,database):
         client = pymongo.MongoClient('localhost', 27017)
         db = client['yyj']
-        sina_data = db['sina_add_url_test']
+        sina_data = db[database]
         df_news = pd.DataFrame(list(sina_data.find()))
         del df_news['_id']
-        print("修改前数据总长度为：")
-        print(len(df_news))
         # 删除无用的行！！ 注意 默认返回的是修改后的, inplace 表示在原来的上面修改
         df_news.dropna(axis=0,how="any",inplace=True)
         df_news = df_news[['title', 'url', 'content', 'category']]
-        print("数据总长度为：")
+        print("训练总文章数", end=" ")
         print(len(df_news))
         content = df_news.content.values.tolist()
         content_S = []
         category_S = []
         for line in range(len(content)):
             text = content[line].strip()
+            text = re.sub('\s', '', text)
             current_segment = jieba.lcut(text)
             if len(current_segment) > 1 and current_segment != '\r\n':
                 category_S.append(df_news['category'][line])
@@ -71,6 +71,8 @@ class util(object):
 
     def clean_stopwords(self, contents, path):
         stopwords = [line.strip() for line in open(path, 'r', encoding='utf-8').readlines()]
+        print("停用词表包含的总停用词个数： ", end=" ")
+        print(len(stopwords))
         contents_clean = []
         all_words = []
         for line in contents:
@@ -89,6 +91,7 @@ class util(object):
         index = 0
         # print(df_news['content'][index])
         content_S_str = ''.join(content_S[index])
+
         print(" ".join(jieba.analyse.extract_tags(content_S_str, topK=5,
                                                   withWeight=False)))
 
